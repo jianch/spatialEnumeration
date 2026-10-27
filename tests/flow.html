@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>jsPsych flow verification</title>
+<link rel="stylesheet" href="../vendor/jspsych.css"><link rel="stylesheet" href="../styles.css"></head>
+<body><div id="verification" class="intro"><h1>jsPsych flow verification</h1><p>Runs an isolated shortened full experiment, including training, timeline variables, mouse number pad, export, and local recovery. Test records are labelled FULL_FLOW_TEST. Click Continue when the fullscreen page appears; click the existing Continue/Start buttons before timed practice and blocks; other steps run automatically.</p><button id="verify">Run flow check</button></div><div id="experiment"></div>
+<script src="../vendor/jspsych.js"></script>
+<script src="../vendor/plugin-html-button-response.js"></script>
+<script src="../vendor/plugin-fullscreen.js"></script><script src="../vendor/plugin-call-function.js"></script>
+<script src="../config.js"></script><script src="../design.js"></script><script src="../display.js"></script><script src="../audio.js"></script><script src="../plugin-enumeration.js"></script>
+<script src="../datapipe.js"></script>
+<script>
+// Exercise the production upload wiring without sending test data to DataPipe.
+window.ENUMERATION_DATAPIPE_ID = 'TEST_ONLY';
+window.flowUploads = [];
+EnumerationDataPipe.send = async (id, filename, data) => {window.flowUploads.push({id, filename, data});return {status:'saved', filename};};
+// Keep automated test records out of the participant recovery database.
+const fullFlowOpen = indexedDB.open.bind(indexedDB);
+indexedDB.open = (name, ...args) => fullFlowOpen(name === 'enumeration-full-experiment-backup' ? 'enumeration-full-flow-test-backup' : name, ...args);
+</script><script src="../app.js"></script>
+<script>
+document.getElementById('verify').addEventListener('click',async()=>{
+  const panel=document.getElementById('verification');panel.hidden=true;
+  const failures=[],errors=[],downloads=[];
+  let retriedDisplay = false;
+  window.addEventListener('error',e=>errors.push(e.message));
+  const originalClick=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(this.download&&this.href.startsWith('blob:'))downloads.push({name:this.download,url:this.href});else originalClick.call(this);};
+  const check=(condition,message)=>{if(!condition)failures.push(message);};
+  const glyphHeight=(node,text)=>{
+    const style=getComputedStyle(node),context=document.createElement('canvas').getContext('2d');
+    context.font=`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const bounds=context.measureText(text);return bounds.actualBoundingBoxAscent+bounds.actualBoundingBoxDescent;
+  };
+  try{
+    Object.assign(EnumerationConfig.design,{numerosities:[3],signalDelaysMs:[100],blockSize:5});
+    // Exercise production training counts: three arrow questions, five pad checks, five unmasked tone trials, eight masked full trials.
+    // Keep the production 60 Hz minimum and its measurement tolerance in this flow check.
+    Object.assign(EnumerationConfig.timing,{fixationMinMs:40,fixationMaxMs:40,cueMs:30,postCueMs:30,itiMs:30});
+    EnumerationConfig.training.feedbackMs=100;
+    const unlockAudio = EnumerationAudio.unlock;
+    EnumerationAudio.unlock = async j => {
+      const audio = await unlockAudio(j);
+      await audio.suspend(); // Exercise failed setup and Check again without changing production parameters.
+      return audio;
+    };
+    const form=document.getElementById('setup-form');
+    check(Math.abs(document.getElementById('calibration-rule').getBoundingClientRect().width/(screen.width/345)-50)<0.1,'50 mm calibration ruler');
+    form.elements.participant.value='FULL_FLOW_TEST';form.elements.verified.checked=true;form.elements.fullscreen.checked=true;
+    form.requestSubmit();
+    const answered=new Set(),buttonClicked=new Set();
+    function mouseNumber(n){
+      const target=document.querySelector(`[data-number="${n}"]`),rect=target.getBoundingClientRect();
+      const active=EnumerationRuntime.active,display=EnumerationApp.jsPsych.getDisplayElement();
+      display.dispatchEvent(new MouseEvent('mousemove',{movementX:rect.x+rect.width/2-active.cursor.x_px,movementY:rect.y+rect.height/2-active.cursor.y_px,bubbles:true}));
+      display.dispatchEvent(new MouseEvent('mousedown',{button:0,buttons:1,clientX:0,clientY:0,bubbles:true}));
+    }
+    const started=performance.now();
+    await new Promise((resolve,reject)=>{
+      const timer=setInterval(()=>{
+        try{
+          if(performance.now()-started>180000){clearInterval(timer);reject(new Error('Flow check timed out'));return;}
+          const app=window.EnumerationApp;if(!app)return;
+          if(app.finished){clearInterval(timer);resolve();return;}
+          if(document.getElementById('setup-form')){clearInterval(timer);reject(new Error('Operator form remained in the jsPsych display'));return;}
+          const j=app.jsPsych,trial=j.getCurrentTrial(),active=EnumerationRuntime.active;
+          if(active?.tonePerfMs && performance.now()>=active.tonePerfMs+(active.row.phase==='main'?1500:180) && !answered.has(active)){
+            const pad=document.querySelector('.enum-number-pad');
+            if(pad&&!pad.hidden){
+              const scale=app.settings.pixelsPerMm,button=pad.querySelector('button'),rect=button.getBoundingClientRect();
+              check(Math.abs(rect.width/scale-11)<0.1&&Math.abs(rect.height/scale-11)<0.1,'11 mm response buttons');
+              check(Math.abs(glyphHeight(button,'0123456789')/scale-4.75)<0.2,'4.75 mm numeral glyphs');
+              const fixation=document.querySelector('.enum-fixation');
+              check(Math.abs(fixation.getBoundingClientRect().width/app.settings.pixelsPerDegree-0.6)<0.01&&Math.abs(fixation.querySelector('i').getBoundingClientRect().width/app.settings.pixelsPerDegree-0.2)<0.01,'Rendered bullseye dimensions');
+              answered.add(active);mouseNumber(active.row.target_numerosity);
+            }
+          }
+          const data=typeof trial?.data==='function'?trial.data():trial?.data;
+          if(trial?.type===jsPsychHtmlButtonResponse&&!buttonClicked.has(trial)){
+            let button;
+            if(data?.task==='display_setup_problem'){
+              check(!retriedDisplay,'Display retry passes after resuming audio');
+              const v=app.metadata.display_validation;
+              check(v.geometry_fits&&!v.audio_ready&&v.fullscreen_ready,'Diagnostics identify suspended audio separately from screen size');
+              check(j.getDisplayElement().textContent.includes('stimuli and response pad fit this screen'),'Clear screen-fit result');
+              retriedDisplay=true;
+              button=j.getDisplayElement().querySelector('[data-choice="0"]');
+            }
+            else if(data?.task==='cue_training')button=j.getDisplayElement().querySelector(`[data-choice="${{left:0,right:1,neutral:2}[data.cue_meaning]}"]`);
+            else if(data?.task==='number_pad_training'){
+              const group=document.querySelector('.number-practice-group'),rect=group.getBoundingClientRect();
+              button=Array.from(j.getDisplayElement().querySelectorAll('.number-practice')).find(b=>Number(b.textContent)===data.requested_number);
+              const expected=EnumerationDesign.responseLayout(innerWidth,innerHeight,app.settings.pixelsPerDegree,EnumerationConfig.geometry,EnumerationConfig.responsePad,app.settings.pixelsPerMm);
+              check(Math.abs(rect.left-expected.left_px)<0.1&&Math.abs(rect.top-expected.top_px)<0.1&&Math.abs(rect.width-expected.width_px)<0.1&&Math.abs(rect.height-expected.height_px)<0.1,'Number-pad practice at timed response position');
+              check(Math.abs(rect.width/(screen.width/345)-128)<0.1&&getComputedStyle(group).gridTemplateColumns.split(' ').length===10,'Horizontal practice row');
+              check(Array.from(group.querySelectorAll('button')).map(b=>b.textContent).join(',')==='0,1,2,3,4,5,6,7,8,9','Ascending number order');
+              check(Math.abs(button.getBoundingClientRect().height/(screen.width/345)-11)<0.1,'Physically calibrated practice buttons');
+              check(Math.abs(glyphHeight(button,'0123456789')/(screen.width/345)-4.75)<0.2,'Physically calibrated practice numerals');
+            }
+            else button=j.getDisplayElement().querySelector('.jspsych-btn');
+            if(button&&!button.dataset.mouseStart){buttonClicked.add(trial);button.click();}
+          }
+        }catch(e){clearInterval(timer);reject(e);}
+      },5);
+    });
+    await new Promise(resolve=>setTimeout(resolve,100));
+    const app=EnumerationApp,all=app.jsPsych.data.get().values(),records=all.filter(r=>r.task==='enumeration'&&r.phase==='main');
+    const backup=window.flowUploads.find(u=>u.filename.endsWith('_block_1.json'));
+    const full=window.flowUploads.find(u=>u.filename.endsWith('_final.json'));
+    const csv=window.flowUploads.find(u=>u.filename.endsWith('_final.csv'));
+    check(window.flowUploads.length===3&&!!backup&&!!full&&!!csv,'Automatic break backup and final JSON and CSV');
+    check(window.flowUploads.every(u=>/^FULL_FLOW_TEST_\d{8}T\d{9}Z_(block_1|final)\.(json|csv)$/.test(u.filename))&&new Set(window.flowUploads.map(u=>u.filename)).size===3,'Participant code, UTC timestamp and file labels');
+    if (backup && full) check(JSON.parse(backup.data).records.filter(r=>r.task==='enumeration'&&r.phase==='main').length===5&&JSON.parse(full.data).scheduled_trials.length===10,'Backup and final contents');
+    check(retriedDisplay&&all.filter(r=>r.task==='display_check').length===2,'Setup retry retains both display checks');
+    check(app.metadata.display_validation.minimum_refresh_met&&app.metadata.display_validation.required_refresh_hz===60&&EnumerationConfig.timing.pilotRefreshTolerance===0.05,'Production 60 Hz admission without a test-only refresh override');
+    const intro=all.find(r=>r.task==='main_instructions');
+    check(!!intro&&intro.main_trial_count===app.rows.length&&intro.stimulus.includes('Practice complete')&&intro.stimulus.includes('Your practice is finished.'),'Explicit main-experiment transition');
+    check(records.length===10,'Main trial count');
+    check(JSON.stringify(records.map(r=>r.configuration_id))===JSON.stringify(app.rows.map(r=>r.configuration_id)),'Timeline variable schedule order');
+    check(new Set(records.map(r=>r.unique_trial_id)).size===10,'Unique trial identifiers');
+    check(all.some(r=>r.trial_type==='call-function')&&!all.some(r=>r.trial_type==='enumeration-action'),'Official call-function plugin');
+    check(records.every(r=>r.rt===r.rt_tone_ms&&r.rt_pad_ms>=0&&r.pointer_events.some(p=>p.accepted&&p.pointer_type==='mouse')),'Mouse pad response and RT');
+    check(records.every(r=>r.response_pad_draw_perf_ms>=r.tone_scheduled_perf_ms),'Pad shown at response signal');
+    check(records.every(r=>r.trial_start_method==='automatic_cursor_reset'&&r.cursor_reset_perf_ms<=r.fixation_draw_perf_ms&&r.cursor_control==='pointer_lock'&&!r.raw_events.some(e=>e.type==='ready_click')),'Automatic cursor reset before every timed trial');
+    check(app.metadata.display_assumptions.brightnessPercent===100&&app.metadata.setup.screenWidthCm===34.5&&app.metadata.setup.viewingDistanceCm===70,'MacBook display assumptions');
+    check(records.every(r=>r.fixation_shape==='bullseye-crosshair'&&r.fixation_extent_deg===0.6&&r.fixation_inner_diameter_deg===0.2&&r.cue_width_deg===0.7&&r.cue_stroke_deg===0.07),'Bullseye fixation and thick arrows');
+    check(records.every(r=>r.cue_center_above_fixation_deg===0.8),'Arrows above fixation');
+    check(records.every(r=>r.mask_duration_browser_ms>60),'Uninterrupted mask duration');
+    check(records.filter(r=>r.cue_validity==='valid').length===6&&records.filter(r=>r.cue_validity==='invalid').length===2&&records.filter(r=>r.cue_validity==='neutral').length===2,'Valid invalid neutral proportions');
+    check(!('eyeTracking' in EnumerationConfig)&&records.every(r=>!('fixation_verified' in r)&&!('fixation_status' in r)),'Behavioral data schema');
+    check(records.every(r=>r.cue_symbol===EnumerationConfig.design.cues[r.cue_meaning]&&!('cue_version' in r)),'Fixed arrow semantics');
+    check(!('cueVersion' in app.metadata.setup),'No arbitrary cue-version setting');
+    check(all.filter(r=>r.task==='cue_training').length===3&&app.metadata.training.completed,'Single-pass arrow check and practice completion');
+    const padChecks=all.filter(r=>r.task==='number_pad_training');
+    check(padChecks.length===5&&padChecks.every((r,i)=>r.number_pad_check===i+1&&r.number_pad_check_total===5),'Exactly five production number-pad checks, without repetitions');
+    for(const [phase,count] of [['tone_training',5],['mixed_practice',8]]){
+      const practice=all.filter(r=>r.task==='enumeration'&&r.phase===phase);
+      check(practice.length===count&&practice.every(r=>r.use_dots===true&&r.dot_coordinates_deg.length===r.target_numerosity),'Production dot practice: '+phase);
+    }
+    const tone=all.filter(r=>r.task==='enumeration'&&r.phase==='tone_training'),mixed=all.filter(r=>r.task==='enumeration'&&r.phase==='mixed_practice');
+    check(tone.length===5&&tone.every(r=>r.mask_enabled===false&&r.mask_draw_perf_ms===null&&r.mask_duration_browser_ms===null&&r.frame_plan.maskFrames===0&&!r.raw_events.some(e=>e.type==='visual_draw'&&e.stage==='mask')&&!r.timing_flag),'Five tone trials without a mask');
+    check(mixed.length===8&&mixed.every(r=>r.mask_enabled===true&&r.mask_duration_browser_ms>60),'Eight full practice trials with a mask');
+    const order=[all.findIndex(r=>r.task==='sound_check'),all.findIndex(r=>r.task==='display_check'),all.findIndex(r=>r.task==='cue_training'),all.findIndex(r=>r.task==='number_pad_training'),all.indexOf(tone[0]),all.indexOf(mixed[0]),all.indexOf(records[0])];
+    check(order.every((index,i)=>index>=0&&(i===0||index>order[i-1])),'Sound, display, arrows, pad, tone, full practice, main order');
+    check(!all.some(r=>r.phase==='unmasked_practice')&&all.filter(r=>r.task==='cue_training').every(r=>r.training_attempt===1)&&[...tone,...mixed].every(r=>r.training_attempt===1),'Practice once without extra blocks');
+    check(!all.some(r=>r.task==='other_number_entry')&&!('responseKeys' in EnumerationConfig),'Other response removed');
+    check(records.every(r=>r.correct_timely===true),'Timely numerical mouse responses');
+    check(records.every(r=>r.response_deadline_ms===3000&&r.rt_tone_ms>=1500),'Extended production response window');
+    check(records.every(r=>r.response_pad_layout.columns===10&&Math.abs(r.response_pad_layout.height_px/r.pixels_per_mm-11)<0.1&&Math.abs(r.response_pad_layout.top_px+r.response_pad_layout.height_px/2-r.response_pad_layout.reminder_top_px-r.response_pad_layout.reminder_height_px/2)<0.1),'Physical response row at reminder centre line');
+    check(records.every(r=>r.iti_draw_perf_ms>=r.mask_off_draw_perf_ms&&r.iti_draw_perf_ms>=r.response_chosen_perf_ms+r.response_feedback_ms),'Advance after selection feedback and complete mask');
+    check(records.every(r=>Math.abs(r.array_duration_ms-200/3)<1e-9)&&app.metadata.setup.mode==='full','Fixed full-experiment exposure and mode');
+    document.querySelector('[data-export=json]').click();
+    const exported=await (await fetch(downloads[0].url)).json();
+    check(exported.metadata.status==='complete'&&exported.scheduled_trials.length===10&&exported.metadata.experiment_variant==='full','Full JSON export');
+    await new Promise(resolve=>setTimeout(resolve,100));
+    const backupDb=await new Promise((resolve,reject)=>{const req=indexedDB.open('enumeration-full-flow-test-backup',1);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+    const run=await new Promise((resolve,reject)=>{const req=backupDb.transaction('runs').objectStore('runs').get(app.metadata.run_id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+    check(run?.metadata.status==='complete','IndexedDB recovery status');backupDb.close();
+    check(errors.length===0,'Browser errors: '+errors.join('; '));
+    const result={passed:failures.length===0,failures,number_pad_checks:padChecks.length,tone_practice_trials:all.filter(r=>r.task==='enumeration'&&r.phase==='tone_training').length,mixed_practice_trials:all.filter(r=>r.task==='enumeration'&&r.phase==='mixed_practice').length,main_records:records.length,version:EnumerationConfig.experimentVersion,presentation_protocol:location.protocol,audio_state:app.jsPsych.pluginAPI.audioContext().state,export_verified:true,measured_refresh_hz:app.metadata.display_check.refresh_hz,minimum_refresh_hz:app.metadata.display_validation.required_refresh_hz,frame_counts:records[0]?.frame_plan};
+    document.getElementById('experiment').innerHTML='<div class="intro"><h1>'+(result.passed?'Flow check passed':'Flow check failed')+'</h1><p>Training, seeded trial order, mouse number pad, uninterrupted masks, fixed main exposure, full JSON export, and local recovery checked.</p><pre id="result"></pre></div>';
+    document.getElementById('result').textContent=JSON.stringify(result,null,2);
+  }catch(e){document.getElementById('experiment').innerHTML='<div class="intro"><h1>Flow check failed</h1><p id="error"></p></div>';document.getElementById('error').textContent=e.stack;}
+  finally{HTMLAnchorElement.prototype.click=originalClick;}
+});
+</script></body></html>

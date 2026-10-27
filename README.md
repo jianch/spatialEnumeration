@@ -1,0 +1,3 @@
+# Spatial cueing and enumeration experiment
+
+A self-contained jsPsych experiment for a two-session spatial cueing and enumeration study. Each session has 810 main trials in nine blocks. The included DataPipe integration saves a JSON backup at every block break and sends full JSON and trial CSV files at the end. See [the experiment notes](EXPERIMENT_NOTES.md) and [current protocol](docs/Experimental_design_and_parameters.docx) for the design and running procedure.

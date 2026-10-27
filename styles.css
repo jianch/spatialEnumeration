@@ -1,0 +1,103 @@
+:root { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; color: #21262d; background: #f4f5f6; }
+.jspsych-display-element {font-family:inherit;font-size:var(--instruction-font-px,22px);line-height:1.5;}
+body { margin: 0; }
+#experiment { min-height: 100vh; }
+.intro, .instructions { max-width: 880px; margin: 0 auto; padding: 28px; text-align: left; }
+h1 { font-size: var(--heading-font-px,34px); font-weight: 600; margin: 0 0 20px; }
+h2 { font-size: var(--instruction-font-px,28px); font-weight: 600; }
+p, li { line-height: 1.6; }
+label { display: block; margin: 16px 0; }
+input, select { display: block; font: inherit; padding: 10px; margin-top: 6px; max-width: 100%; box-sizing: border-box; }
+input[type=checkbox] { display: inline; margin-right: 8px; }
+button, .jspsych-btn { font: inherit; padding: 12px 20px; background: #23394b; color: white; border: 0; border-radius: 5px; margin: 6px; cursor: pointer; }
+/* Pointer lock leaves native :hover at the old system-pointer position.
+   Timed response buttons use the virtual cursor's .hovered class instead. */
+button:not(.enum-number):hover, .jspsych-btn:hover {background:#31546f;}
+button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #2969a0; outline-offset: 3px; }
+.secondary { background: #e1e6eb; color: #21262d; }
+.notice { background: #e8edf1; padding: 14px 18px; border-radius: 5px; }
+.status { min-height: 24px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 24px; }
+.symbol-legend { display: flex; flex-wrap: wrap; gap: 28px; margin: 24px 0; }
+.symbol-item { display: flex; align-items: center; gap: 12px; }
+.symbol-item canvas { width: 48px; height: 48px; }
+.enum-active, .enum-pad-practice { background: #808080; }
+:is(.enum-active,.enum-pad-practice) #experiment, :is(.enum-active,.enum-pad-practice) .jspsych-content-wrapper, :is(.enum-active,.enum-pad-practice) .jspsych-content { width: 100%; height: 100vh; max-width: none; padding: 0; margin: 0; overflow: hidden; }
+.enum-canvas { width: 100vw; height: 100vh; display: block; }
+.small { font-size: 18px; color: #465360; }
+kbd { background: #e1e6eb; padding: 2px 6px; border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+td, th { text-align: left; padding: 8px; border-bottom: 1px solid #d8dfe5; }
+
+.enum-fixation {position:fixed;left:50%;top:50%;width:var(--fix-size);height:var(--fix-size);transform:translate(-50%,-50%);pointer-events:none;z-index:2;background:var(--fix-colour);border-radius:50%;overflow:hidden;}
+.enum-fixation span {position:absolute;background:var(--fix-contrast);left:50%;top:50%;transform:translate(-50%,-50%);}
+.enum-fixation span:first-child {width:100%;height:var(--fix-stroke);}
+.enum-fixation span:nth-child(2) {height:100%;width:var(--fix-stroke);}
+.enum-fixation i {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--fix-inner-size);height:var(--fix-inner-size);border-radius:50%;background:var(--fix-colour);}
+.enum-number-pad {position:fixed;display:grid;z-index:3;}
+.enum-number-pad[hidden],.enum-trial-reminder[hidden],.enum-cursor[hidden] {display:none;}
+.enum-cursor {position:fixed;z-index:10;width:18px;height:24px;pointer-events:none;overflow:visible;}
+.enum-cursor svg {display:block;width:100%;height:100%;}
+.enum-number {box-sizing:border-box;margin:0;padding:0;font-size:var(--number-font-px,32px);font-weight:600;line-height:1;background:#e8e8e8;color:#101010;border:1px solid #444;border-radius:6px;touch-action:none;user-select:none;}
+.enum-number.hovered {background:#fff;}
+.enum-number.selected {background:#bed5e7;border:2px solid #23394b;}
+.enum-trial-reminder {position:fixed;z-index:3;font-size:var(--reminder-font-px,20px);line-height:var(--reminder-line-height,26px);text-align:center;white-space:nowrap;color:#101010;pointer-events:none;}
+#jspsych-html-button-response-btngroup.number-practice-group {position:fixed;display:grid;z-index:3;max-width:none;margin:0;padding:0;}
+.enum-pad-practice #jspsych-html-button-response-stimulus {position:fixed;left:0;top:50%;width:100%;transform:translateY(-50%);}
+.enum-pad-practice .instructions {padding:0;text-align:center;}
+.enum-pad-practice h1 {margin:0;}
+.number-practice {width:100%;min-width:0;box-sizing:border-box;height:var(--pad-button-height,52px);margin:0;padding:0;font-size:var(--number-font-px,32px);font-weight:600;line-height:1;background:#e8e8e8;color:#101010;border:1px solid #444;border-radius:6px;}
+.number-practice:hover {background:#fff;}
+
+/* Operator setup typography for the MacBook display. */
+.setup-page {font-size:16px;line-height:1.45;max-width:880px;padding:20px 24px;}
+.setup-page h1 {font-size:28px;line-height:1.2;margin:0 0 8px;}
+.setup-page h2 {font-size:22px;line-height:1.3;margin:20px 0 8px;}
+.setup-page p {line-height:1.45;margin:8px 0;}
+.setup-page label {font-size:16px;line-height:1.4;margin:8px 0;}
+.setup-page input,.setup-page select {font-size:16px;line-height:1.25;padding:7px 10px;margin-top:4px;}
+.setup-page .form-grid input,.setup-page .form-grid select {width:100%;}
+.setup-page input[type=checkbox] {width:16px;height:16px;vertical-align:middle;}
+.setup-page button {font-size:16px;line-height:1.3;padding:10px 16px;margin:4px 0;}
+.setup-page .small,.setup-page .notice {font-size:14px;line-height:1.45;}
+.setup-page .notice {padding:10px 14px;}
+.setup-page .status {min-height:0;margin:6px 0;}
+.setup-page .status:empty {display:none;}
+.setup-page .symbol-legend {font-size:15px;gap:24px;margin:12px 0;}
+.setup-page .symbol-item {gap:8px;}
+.setup-page .symbol-item svg {width:36px;height:36px;}
+.setup-page #recovery p {margin:4px 0;}
+.calibration-rule {height:8px;border:solid #21262d;border-width:0 1px 2px;margin:8px 0 12px;box-sizing:border-box;}
+.display-diagnostics {font-size:16px;}
+.display-diagnostics h1 {font-size:28px;}
+.display-diagnostics p,.display-diagnostics td,.display-diagnostics th {line-height:1.45;}
+.display-diagnostics th,.display-diagnostics td {vertical-align:top;}
+.display-diagnostics h1,.display-diagnostics p {margin-bottom:12px;}
+@media (max-width:600px) {
+  .setup-page {padding:16px;}
+  .setup-page h1 {font-size:26px;}
+  .setup-page .form-grid {gap:0 16px;}
+}
+
+/* The main-phase introduction is visually distinct from practice instructions. */
+.enum-main-intro .instructions {padding:0;width:min(880px,calc(100vw - 48px));max-width:none;background:#fff;border:2px solid #23394b;border-radius:10px;overflow:hidden;}
+.main-intro-banner {padding:18px 28px;background:#23394b;color:#fff;}
+.main-intro-banner h1 {margin:0;text-transform:uppercase;letter-spacing:0.03em;}
+.main-intro-kicker {margin:0 0 4px;font-weight:600;}
+.main-intro-body {padding:8px 28px 16px;}
+.main-intro-body p {margin:12px 0;line-height:1.4;}
+.main-intro-schedule {font-weight:600;}
+.main-intro-reminder {padding:12px 16px;background:#e8edf1;border-left:5px solid #23394b;}
+.main-intro-body ol {margin:12px 0;padding-left:1.3em;}
+.main-intro-body li {margin:8px 0;line-height:1.4;}
+.enum-main-intro .jspsych-btn {font-weight:700;min-width:260px;padding:14px 28px;margin:18px 0;}
+
+/* Keep the opening page focused on the participant's task. */
+.setup-page .general-instructions h2 {margin:16px 0 8px;}
+.setup-page .general-instructions ol {padding-left:1.4em;margin:10px 0;}
+.setup-page .general-instructions li {line-height:1.45;margin:7px 0;}
+.setup-page .general-instructions .notice {font-size:16px;}
+.setup-page .setup-details {border-top:1px solid #d8dfe5;margin:12px 0;padding:12px 0;}
+.setup-page .setup-details summary {cursor:pointer;font-weight:600;}
+.setup-page .setup-details[open] summary {margin-bottom:12px;}

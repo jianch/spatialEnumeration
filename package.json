@@ -1,0 +1,13 @@
+{
+  "name": "spatial-cueing-enumeration-full-experiment",
+  "version": "0.16.0",
+  "private": true,
+  "scripts": {
+    "start": "node serve.cjs",
+    "test": "node --test tests/design.test.cjs tests/audio.test.cjs tests/plugin.test.cjs tests/full-experiment.test.cjs tests/figure-models.test.cjs tests/datapipe.test.cjs",
+    "testmonkey": "node tools/testmonkey.cjs",
+    "testmonkey:analyse": "Rscript tools/analyse-testmonkey.R output/testmonkey",
+    "simulate:figures": "node tools/simulate-figure-models.cjs",
+    "analyse:figures": "Rscript tools/analyse-figure-models.R output/figure-matched-simulation"
+  }
+}

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mouse number pad checks</title><link rel="stylesheet" href="../vendor/jspsych.css"><link rel="stylesheet" href="../styles.css"></head>
+<body><div id="experiment"><div class="intro"><h1>Mouse number pad checks</h1><p>Runs eighteen synthetic-response trials without participant data.</p><button id="run-checks">Run checks</button></div></div>
+<script src="../vendor/jspsych.js"></script><script src="../config.js"></script><script src="../design.js"></script><script src="../display.js"></script><script src="../audio.js"></script><script src="../plugin-enumeration.js"></script>
+<script>
+document.getElementById('run-checks').addEventListener('click',async()=>{
+ const mouseReady=EnumerationMouse.acquire();mouseReady.catch(()=>{});
+ const C=structuredClone(EnumerationConfig),D=EnumerationDesign;C.timing.cueMs=40;C.timing.postCueMs=40;C.timing.responseDeadlineMs=400;
+ const clock=[];let last;
+ for(let i=0;i<35;i++){const now=await new Promise(r=>requestAnimationFrame(r));if(last&&i>5)clock.push(now-last);last=now;}
+ clock.sort((a,b)=>a-b);const frameMs=clock[Math.floor(clock.length/2)];
+ const tests=[
+  {name:'Automatic cursor reset before each trial; no return circle',events:[{at:180,value:6}],verify:r=>r.trial_start_method==='automatic_cursor_reset'&&r.cursor_reset_perf_ms<=r.fixation_draw_perf_ms&&r.cursor_reset_verified&&r.no_return_circle},
+  {name:'Unmasked practice has no mask and keeps target timing',maskEnabled:false,events:[{at:180,value:6}],verify:r=>r.mask_enabled===false&&r.mask_draw_perf_ms===null&&r.mask_off_draw_perf_ms===null&&r.mask_duration_browser_ms===null&&r.frame_plan.maskFrames===0&&r.array_duration_browser_ms>40&&r.array_duration_browser_ms<100&&!r.raw_events.some(e=>e.type==='visual_draw'&&e.stage==='mask')&&!r.timing_flag&&r.correct_timely},
+  {name:'Late grace response preserves feedback and intertrial interval',events:[{at:620,value:6}],verify:r=>r.late&&r.iti_draw_perf_ms>=r.response_chosen_perf_ms+r.response_feedback_ms&&r.raw_events.at(-1).perf_ms-r.iti_draw_perf_ms>=r.iti_duration_ms-25},
+  {name:'Mouse response during mask',events:[{at:20,value:6}],verify:r=>r.fast_response&&r.correct_timely&&r.response_timestamp_during_mask},
+  {name:'Hidden pad ignores early press',events:[{at:-50,value:5},{at:180,value:6}],verify:r=>r.response===6&&r.pointer_events.some(p=>p.before_tone&&!p.accepted)},
+  {name:'Zero is a direct number',events:[{at:180,value:0}],verify:r=>r.response===0&&r.response_route==='number_pad'&&!r.numerical_correct},
+  {name:'Late response and timeout',events:[{at:450,value:6}],verify:r=>r.late&&r.timeout&&!r.timing_compliant},
+  {name:'Intertrial press ignored',events:[{at:700,value:6}],verify:r=>r.response===null&&r.pointer_events.some(p=>p.outside_capture_window)},
+  {name:'Keyboard cannot answer',events:[{at:100,keyboard:6},{at:180,value:5}],verify:r=>r.response===5&&!r.numerical_correct},
+  {name:'Right button ignored',events:[{at:20,value:5,button:2},{at:180,value:6}],verify:r=>r.response===6&&r.correct_timely},
+  {name:'Touch input ignored',events:[{at:20,value:5,pointerType:'touch'},{at:180,value:6}],verify:r=>r.response===6&&r.correct_timely},
+  {name:'First mouse number is permanent',events:[{at:180,value:6},{at:220,value:5}],verify:r=>r.response===6&&r.correct_timely&&r.pointer_events.filter(p=>p.accepted).length===1},
+  {name:'Missing response retained',events:[],verify:r=>r.timeout&&r.response===null&&r.accuracy_all_scheduled===0},
+  {name:'Interrupted trial flagged',events:[{at:-50,blur:true}],verify:r=>r.technical_abort==='window_blur'&&r.timing_flag},
+  {name:'Long target finishes before response',duration:300,delay:400,events:[{at:180,value:6}],verify:r=>r.array_duration_browser_ms>=280&&r.array_duration_browser_ms<350&&r.correct_timely&&r.response_pad_draw_perf_ms>=r.mask_draw_perf_ms},
+  {name:'Fixation persists through every stage',events:[{at:180,value:6}],verify:r=>r.cue_center_above_fixation_deg===0.8&&r.fixation_shape==='bullseye-crosshair'&&r.fixation_inner_diameter_deg===0.2&&r.fixation_visible_every_stage},
+  {name:'Production window accepts a 1500 ms click',longWindow:true,events:[{at:1500,value:6}],verify:r=>r.correct_timely&&r.response_deadline_ms===3000&&r.rt_tone_ms>=1500&&r.iti_draw_perf_ms>=r.response_chosen_perf_ms+r.response_feedback_ms},
+  {name:'Early click cannot shorten a long mask',maskFrames:240,events:[{at:20,value:6}],verify:r=>r.correct_timely&&r.mask_duration_browser_ms>=1900&&r.iti_draw_perf_ms>=r.mask_off_draw_perf_ms}
+ ];
+ let current=0,cross=null,crossOK=true,noReady=true,resetSeen=false,resetOK=true,layoutOK=true,reminderOK=true;
+ const dots=D.generateDots(6,C.geometry,'mouse-diagnostic-dots'),results=[];
+ const interval=setInterval(()=>{
+  const active=EnumerationRuntime.active;if(!active)return;
+  noReady=noReady&&!document.querySelector('.enum-ready')&&!document.querySelector('.enum-pointer-prompt')&&!document.querySelector('.enum-enable-mouse');
+  const nowCross=document.querySelector('.enum-fixation');
+  if(!cross)cross=nowCross;
+  crossOK=crossOK&&nowCross===cross&&!!nowCross&&getComputedStyle(nowCross).display!=='none'&&Math.abs(nowCross.getBoundingClientRect().width-0.6*active.pixelsPerDegree)<0.1&&!!nowCross.querySelector('i');
+  const reminder=document.querySelector('.enum-trial-reminder'),pad=document.querySelector('.enum-number-pad');
+  noReady=noReady&&!document.querySelector('.enum-mouse-home');
+  const reminderRect=reminder.getBoundingClientRect(),display=j.getDisplayElement();
+  if(!active.started)return;
+  const cursor=document.querySelector('.enum-cursor');
+  resetOK=resetOK&&!!cursor&&getComputedStyle(cursor).display!=='none';
+  if(!resetSeen){
+    resetSeen=true;
+    resetOK=resetOK&&Math.abs(active.cursor.x_px-innerWidth/2)<0.1&&Math.abs(active.cursor.y_px-active.cursorResetPosition.y_px)<0.1;
+  }
+  if(!reminder.hidden){
+    reminderOK=reminderOK&&reminder.textContent==='Look at the centre dot, only respond after hearing tone.';
+    layoutOK=layoutOK&&Math.abs(reminderRect.y+reminderRect.height/2-parseFloat(pad.style.top)-parseFloat(pad.querySelector('button').style.height)/2)<0.1;
+  }
+  if(!pad.hidden)reminderOK=reminderOK&&reminder.hidden;
+  if(!active.tonePerfMs)return;
+  for(const event of tests[current].events){
+   if(event.sent||performance.now()<active.tonePerfMs+event.at)continue;event.sent=true;
+   if(event.blur)window.dispatchEvent(new Event('blur'));
+   else if(event.keyboard!==undefined)j.getDisplayElement().dispatchEvent(new KeyboardEvent('keydown',{key:String(event.keyboard),bubbles:true}));
+   else {
+    const target=document.querySelector(`[data-number="${event.value}"]`),rect=target.getBoundingClientRect();
+    display.dispatchEvent(new MouseEvent('mousemove',{movementX:rect.x+rect.width/2-active.cursor.x_px,movementY:rect.y+rect.height/2-active.cursor.y_px,bubbles:true}));
+    display.dispatchEvent(new MouseEvent('mousedown',{button:event.button||0,buttons:1,sourceCapabilities:event.pointerType==='touch'?new InputDeviceCapabilities({firesTouchEvents:true}):null,clientX:0,clientY:0,bubbles:true}));
+   }
+  }
+ },2);
+ const j=initJsPsych({display_element:'experiment',...EnumerationAudio.initializationOptions(location.protocol),on_finish:()=>{
+  clearInterval(interval);if(document.pointerLockElement)document.exitPointerLock();const passed=results.filter(r=>r.passed).length;
+  document.getElementById('experiment').innerHTML='<div class="intro"><h1>'+passed+' of '+tests.length+' checks passed</h1><table><tr><th>Check</th><th>Result</th></tr>'+results.map(r=>'<tr><td>'+r.name+'</td><td>'+(r.passed?'PASS':'FAIL')+'</td></tr>').join('')+'</table><p>Physical display, acoustic onset, and mouse movement still require pilot evaluation.</p><pre id="failures"></pre></div>';window.integrationResults=results;
+  document.getElementById('failures').textContent=JSON.stringify(results.filter(r=>!r.passed).map(({name,record:r})=>({name,technical_abort:r.technical_abort,response:r.response,rt:r.rt,timing_flag:r.timing_flag,mask_duration_browser_ms:r.mask_duration_browser_ms,pointer_events:r.pointer_events})),null,2);
+ }});
+ await mouseReady;await EnumerationAudio.unlock(j);document.getElementById('experiment').replaceChildren();
+ await j.run(tests.map((test,index)=>({type:jsPsychEnumeration,
+  row:{task:'enumeration',phase:'diagnostic',mask_enabled:test.maskEnabled!==false,target_numerosity:6,target_side:'left',cue_symbol:'arrow-left',cue_meaning:'left',cue_validity:'valid',array_duration_ms:test.duration||200/3,signal_delay_ms:test.delay||100,fixation_ms:20,mask_seed:'mouse-diagnostic-mask',dot_coordinates_deg:dots},
+  settings:{config:{...C,timing:{...C.timing,responseDeadlineMs:test.longWindow?EnumerationConfig.timing.responseDeadlineMs:C.timing.responseDeadlineMs,maskFramesAtReference:test.maskFrames||C.timing.maskFramesAtReference}},frameMs,pixelsPerDegree:D.pixelsPerDegree(C.geometry.defaultScreenWidthCm,C.geometry.defaultViewingDistanceCm,screen.width),pixelsPerMm:screen.width/(C.geometry.defaultScreenWidthCm*10),requireFullscreen:false},
+  on_start:()=>{current=index;cross=null;crossOK=true;noReady=true;resetSeen=false;resetOK=true;layoutOK=true;reminderOK=true;},
+  on_finish:r=>{r.response_timestamp_during_mask=r.rt_array_ms!==null&&r.array_draw_perf_ms+r.rt_array_ms<r.mask_off_draw_perf_ms;r.fixation_visible_every_stage=crossOK;r.no_ready_button=noReady;r.cursor_reset_verified=resetSeen&&resetOK;r.no_return_circle=noReady;r.iti_duration_ms=C.timing.itiMs;const expected=(test.maskFrames||C.timing.maskFramesAtReference)*1000/C.timing.referenceHz;const preserved=!!r.technical_abort||!r.mask_enabled||(r.mask_duration_browser_ms>=expected-30&&r.mask_duration_browser_ms<=expected+60);results.push({name:test.name,passed:!!test.verify(r)&&preserved&&resetOK&&layoutOK&&reminderOK,record:r});}
+ })));
+});
+</script></body></html>

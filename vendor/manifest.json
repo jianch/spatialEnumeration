@@ -1,0 +1,34 @@
+{
+  "jspsych.js": {
+    "url": "https://unpkg.com/jspsych@8.3.0/dist/index.browser.js",
+    "sha256": "2090de51df26355fa388e4385d4ad075ac042ea2bec29592f5933aa9db964e7b"
+  },
+  "jspsych.css": {
+    "url": "https://unpkg.com/jspsych@8.3.0/css/jspsych.css",
+    "sha256": "c12a72534d1676abd0e6a78c5040a78deae5798ee646284290d3be465291a3a4"
+  },
+  "plugin-html-keyboard-response.js": {
+    "url": "https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.2.0/dist/index.browser.js",
+    "sha256": "126e54c03acb3c36686c88b892cc281e4cf242b39f4fa4bfcbdc01dac9890912"
+  },
+  "plugin-html-button-response.js": {
+    "url": "https://unpkg.com/@jspsych/plugin-html-button-response@2.1.0/dist/index.browser.js",
+    "sha256": "8d50f1435bb49a0655a357274eaa597e33f1523dd5a5240154920176d8374163"
+  },
+  "plugin-survey-html-form.js": {
+    "url": "https://unpkg.com/@jspsych/plugin-survey-html-form@2.1.0/dist/index.browser.js",
+    "sha256": "418845bafeb357c2be55f1023c4c597005aec50bd1e8caac82e06d4b3d15e160"
+  },
+  "plugin-fullscreen.js": {
+    "url": "https://unpkg.com/@jspsych/plugin-fullscreen@2.1.0/dist/index.browser.js",
+    "sha256": "77f700f800ffb72e4f0c20f7b5707d57cd71f2d4dd21147a22e2915bb18e3f38"
+  },
+  "plugin-call-function.js": {
+    "url": "https://unpkg.com/@jspsych/plugin-call-function@2.1.0/dist/index.browser.js",
+    "sha256": "d3472c101ea2e3c863aee1fd9e7371c3d075dee9d2e5b08f127516598841011d"
+  },
+  "JSPsych-LICENSE.txt": {
+    "url": "https://raw.githubusercontent.com/jspsych/jsPsych/main/license.txt",
+    "sha256": "412c203cb08996fa95525ad0a98a79985f844a7d23b9bef31a6eb2b864600fc9"
+  }
+}

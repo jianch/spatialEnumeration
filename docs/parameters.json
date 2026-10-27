@@ -1,0 +1,192 @@
+{
+  "config": {
+    "experimentVersion": "0.16.0-full",
+    "jsPsychVersion": "8.3.0",
+    "design": {
+      "numerosities": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "signalDelaysMs": [
+        100,
+        150,
+        225,
+        350,
+        600,
+        1000,
+        1600,
+        2500,
+        3500
+      ],
+      "trialsPerCell": 20,
+      "sessions": 2,
+      "blockSize": 90,
+      "stimulusPoolSeed": "enumeration-stimulus-pool-v2",
+      "cues": {
+        "left": "arrow-left",
+        "right": "arrow-right",
+        "neutral": "arrow-neutral"
+      }
+    },
+    "timing": {
+      "fixationMinMs": 500,
+      "fixationMaxMs": 800,
+      "cueMs": 100,
+      "postCueMs": 400,
+      "referenceHz": 120,
+      "arrayFramesAtReference": 8,
+      "maskFramesAtReference": 12,
+      "minimumRefreshHz": 60,
+      "pilotRefreshTolerance": 0.05,
+      "responseDeadlineMs": 3000,
+      "lateObservationMs": 250,
+      "responseFeedbackMs": 300,
+      "fastResponseFlagMs": 100,
+      "itiMs": 500,
+      "toneMs": 100,
+      "toneFrequencyHz": 2000,
+      "toneGain": 0.08,
+      "frameGapMultiplier": 1.5
+    },
+    "geometry": {
+      "eccentricityDeg": 5,
+      "apertureDiameterDeg": 4,
+      "dotDiameterDeg": 0.4,
+      "minCenterSeparationDeg": 1,
+      "cueDiameterDeg": 0.7,
+      "cueStrokeDeg": 0.07,
+      "cueOffsetAboveDeg": 0.8,
+      "fixationShape": "bullseye-crosshair",
+      "fixationDiameterDeg": 0.6,
+      "fixationInnerDiameterDeg": 0.2,
+      "fixationStrokeDeg": 0.2,
+      "fixationContrast": "#ffffff",
+      "defaultScreenWidthCm": 34.5,
+      "defaultViewingDistanceCm": 70,
+      "background": "#808080",
+      "foreground": "#101010",
+      "maskTileDeg": 0.12
+    },
+    "displaySetup": {
+      "device": "16-inch MacBook Pro built-in display",
+      "brightnessPercent": 100,
+      "automaticBrightness": false,
+      "trueTone": false,
+      "nightShift": false,
+      "power": "AC",
+      "refreshMode": "60 Hz or higher; ProMotion also supported",
+      "verification": "assumed; browser cannot verify display settings"
+    },
+    "training": {
+      "cueTrials": 3,
+      "numberPadTrials": 5,
+      "toneTrials": 5,
+      "mixedTrials": 8,
+      "feedbackMs": 900,
+      "arrayDurationsMs": [
+        66.66666666666667,
+        150,
+        300
+      ]
+    },
+    "demo": {
+      "numerosities": [
+        3,
+        6
+      ],
+      "signalDelaysMs": [
+        150,
+        600
+      ],
+      "trialsPerCell": 5,
+      "arrayDurationsMs": [
+        66.66666666666667,
+        100,
+        150,
+        250,
+        400
+      ]
+    },
+    "responsePad": {
+      "numbers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "buttonWidthMm": 11,
+      "buttonHeightMm": 11,
+      "gapMm": 2,
+      "marginMm": 4,
+      "numberGlyphHeightMm": 4.75,
+      "reminderGlyphHeightMm": 3.8,
+      "reminderLineHeightMm": 7
+    },
+    "typography": {
+      "instructionCapitalHeightMm": 3.8,
+      "headingCapitalHeightMm": 5.5
+    },
+    "dependencies": {
+      "core": "8.3.0",
+      "htmlButton": "2.1.0",
+      "fullscreen": "2.1.0",
+      "callFunction": "2.1.0"
+    },
+    "mouseCursor": {
+      "resetBelowDeg": 0.8
+    }
+  },
+  "derived": {
+    "trials_per_session": 810,
+    "trials_total": 1620,
+    "blocks_per_session": 9,
+    "session_cue_counts": {
+      "valid": 486,
+      "invalid": 162,
+      "neutral": 162
+    },
+    "per_numerosity_delay_session": {
+      "valid": 6,
+      "invalid": 2,
+      "neutral": 2
+    },
+    "nominal_array_ms": 66.66666666666667,
+    "nominal_mask_ms": 100,
+    "practice_array_durations_ms": [
+      66.66666666666667,
+      150,
+      300
+    ],
+    "demo_array_durations_ms": [
+      66.66666666666667,
+      100,
+      150,
+      250,
+      400
+    ],
+    "estimated_main_minutes_without_responses_per_session": 81.1875,
+    "minimum_refresh_hz": 60,
+    "minimum_measured_refresh_hz": 57,
+    "frame_counts_at_60_hz": {
+      "array": 4,
+      "mask": 6
+    },
+    "frame_counts_at_120_hz": {
+      "array": 8,
+      "mask": 12
+    }
+  }
+}
